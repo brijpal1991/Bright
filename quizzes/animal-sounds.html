@@ -1,0 +1,234 @@
+<!-- animal-sounds.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Animal Sounds Quiz - BrightMinds</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .quiz-container {
+      max-width: 800px;
+      margin: 2em auto;
+      padding: 1em;
+      background: #fff;
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    .animal-options {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1em;
+      margin-top: 2em;
+    }
+    .animal-option {
+      width: 100%;
+      border: 2px solid #ccc;
+      border-radius: 12px;
+      padding: 0px;
+      cursor: pointer;
+      background-color: #fefefe;
+      transition: background 0.3s, transform 0.2s;
+      text-align: center;
+    }
+    .animal-option:hover {
+      background-color: #e0f7fa;
+      transform: scale(1.05);
+    }
+    .animal-option img {
+      width: 100%;
+      height: 100px;
+      object-fit: contain;
+    }
+    .feedback {
+      font-size: 1.2em;
+      margin-top: 1em;
+    }
+    .score-board {
+      text-align: center;
+      font-size: 1.2em;
+      margin-top: 1em;
+    }
+    .info-bar {
+      display: flex;
+      justify-content: space-between;
+      font-size: 1em;
+      margin-top: 1em;
+    }
+    .play-again {
+      display: none;
+      margin: 1em auto;
+      text-align: center;
+    }
+    .play-again button {
+      padding: 0.5em 1em;
+      font-size: 1em;
+      background-color: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .play-again button:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+   <nav class="navbar navbar-expand-lg navbar-light bg-light px-4">
+    <a class="navbar-brand" href="../index.html">BrightMinds</a>
+    <div class="collapse navbar-collapse">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item"><a class="nav-link active" href="animal-sounds.html">Animal Sound</a></li>
+        <li class="nav-item"><a class="nav-link" href="math-quiz.html">Math Quiz</a></li>
+        <!-- <li class="nav-item"><a class="nav-link" href="social-quiz.html">Social Quiz</a></li> -->
+      </ul>
+    </div>
+  </nav>
+
+
+  <main>
+    <div class="quiz-container">
+      <button onclick="playSound()">🔊 Play Sound</button>
+      <div class="animal-options" id="options"></div>
+      <div class="feedback" id="feedback"></div>
+      <div class="info-bar">
+        <div>Score: <span id="score">0</span></div>
+        <div>Lives: <span id="lives">3</span></div>
+        <div>Timer: <span id="timer">10</span>s</div>
+      </div>
+      <div class="score-board" id="gameOver" style="display:none;"></div>
+      <div class="play-again" id="playAgain">
+        <button onclick="restartGame()">🔁 Play Again</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const animals = [
+      "cat", "dog", "cow", "sheep", "lion", "tiger", "elephant", "monkey",
+      "bear", "fox", "goat", "wolf", "panda", "camel", "horse", "rabbit",
+      "buffalo", "gorilla"
+    ];
+
+    let correctAnswer = "";
+    let currentAudio = null;
+    let score = 0;
+    let lives = 3;
+    let round = 0;
+    let maxRounds = 10;
+    let timer;
+    let timeLeft = 10;
+
+    function getRandomItems(arr, count, mustInclude) {
+      const others = arr.filter(item => item !== mustInclude);
+      const shuffled = others.sort(() => 0.5 - Math.random());
+      const selected = shuffled.slice(0, count - 1);
+      selected.push(mustInclude);
+      return selected.sort(() => 0.5 - Math.random());
+    }
+
+    function startTimer() {
+      timeLeft = 10;
+      document.getElementById("timer").textContent = timeLeft;
+      timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById("timer").textContent = timeLeft;
+        if (timeLeft === 0) {
+          clearInterval(timer);
+          loseLife();
+        }
+      }, 1000);
+    }
+
+    function playSound() {
+      if (round >= maxRounds || lives <= 0) return;
+      round++;
+      correctAnswer = animals[Math.floor(Math.random() * animals.length)];
+      const options = getRandomItems(animals, 6, correctAnswer);
+
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+      }
+
+      currentAudio = new Audio(`../assets/sounds/${correctAnswer}.mp3`);
+      currentAudio.play();
+
+      const container = document.getElementById("options");
+      container.innerHTML = "";
+
+      options.forEach(animal => {
+        const div = document.createElement("div");
+        div.className = "animal-option";
+        div.innerHTML = `<img src="../assets/images/animals/${animal}.jpg" alt="${animal}"><p>${animal.charAt(0).toUpperCase() + animal.slice(1)}</p>`;
+        div.onclick = () => checkAnswer(animal);
+        container.appendChild(div);
+      });
+
+      document.getElementById("feedback").textContent = "";
+      clearInterval(timer);
+      startTimer();
+    }
+
+    function checkAnswer(selected) {
+      clearInterval(timer);
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+      }
+
+      const feedback = document.getElementById("feedback");
+      if (selected === correctAnswer) {
+        feedback.textContent = "✅ Correct! Great job!";
+        feedback.style.color = "green";
+        score++;
+        document.getElementById("score").textContent = score;
+      } else {
+        feedback.textContent = `❌ Oops! It was ${correctAnswer}`;
+        feedback.style.color = "red";
+        loseLife();
+        return;
+      }
+
+      if (round >= maxRounds || lives <= 0) {
+        showGameOver();
+      } else {
+        setTimeout(playSound, 2000);
+      }
+    }
+
+    function loseLife() {
+      lives--;
+      document.getElementById("lives").textContent = lives;
+      if (lives <= 0 || round >= maxRounds) {
+        showGameOver();
+      } else {
+        setTimeout(playSound, 2000);
+      }
+    }
+
+    function showGameOver() {
+      const board = document.getElementById("gameOver");
+      board.style.display = "block";
+      board.textContent = `🎉 Game Over! Your score is ${score}/${maxRounds}`;
+      document.getElementById("options").innerHTML = "";
+      document.getElementById("playAgain").style.display = "block";
+    }
+
+    function restartGame() {
+      score = 0;
+      lives = 3;
+      round = 0;
+      document.getElementById("score").textContent = score;
+      document.getElementById("lives").textContent = lives;
+      document.getElementById("gameOver").style.display = "none";
+      document.getElementById("playAgain").style.display = "none";
+      playSound();
+    }
+
+    window.onload = playSound;
+  </script>
+</body>
+</html>

@@ -1,0 +1,202 @@
+<!-- math-quiz.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Math Quiz - BrightMinds</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #fff8dc;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .quiz-container {
+      max-width: 900px;
+      margin: 3em auto;
+      padding: 2em;
+      background: #ffffff;
+      border-radius: 15px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    }
+    .question-img {
+      max-width: 100px;
+      display: block;
+      margin: 1em auto;
+    }
+    .question {
+      font-size: 1.5em;
+      margin-bottom: 1em;
+      text-align: center;
+    }
+    .option button {
+      width: 100%;
+      padding: 0.75em;
+      font-size: 1.1em;
+      border-radius: 10px;
+      border: 2px solid #ddd;
+      background-color: #f9f9f9;
+      transition: background-color 0.3s;
+	  margin-bottom:5px;
+    }
+    .option button:hover {
+      background-color: #d1e7dd;
+    }
+    .feedback, .score-board, .timer-board {
+      text-align: center;
+      font-size: 1.2em;
+      margin-top: 1em;
+    }
+    .progress {
+      height: 20px;
+    }
+    .play-again {
+      text-align: center;
+      margin-top: 1.5em;
+    }
+    nav a {
+      margin-right: 1em;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light px-4">
+    <a class="navbar-brand" href="../index.html">BrightMinds</a>
+    <div class="collapse navbar-collapse">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item"><a class="nav-link" href="english-quiz.html">English Quiz</a></li>
+        <li class="nav-item"><a class="nav-link active" href="#">Math Quiz</a></li>
+        <li class="nav-item"><a class="nav-link" href="social-quiz.html">Social Quiz</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container quiz-container">
+    <h2 class="text-center mb-4">➕ Math Quiz - Level <span id="level">1</span></h2>
+    <div class="progress mb-3">
+      <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%"></div>
+    </div>
+    <div id="quizBox">
+      <div id="questionImage"></div>
+      <div class="question" id="questionText"></div>
+      <div id="optionsContainer" class="mb-3"></div>
+      <div class="feedback" id="feedback"></div>
+      <div class="score-board">
+        Score: <span id="score">0</span> / <span id="total">0</span>
+      </div>
+      <div class="timer-board">
+        Time Left: <span id="timer">15</span> seconds
+      </div>
+    </div>
+    <div class="play-again" style="display:none;">
+      <button class="btn btn-primary" onclick="restartQuiz()">Play Again</button>
+    </div>
+  </div>
+
+  <audio id="correctSound" src="../assets/sounds/correct.mp3"></audio>
+  <audio id="wrongSound" src="../assets/sounds/wrong.mp3"></audio>
+
+  <script>
+    const questions = [
+      { question: "2 + 3 = ?", options: ["5", "4", "6", "7"], answer: "5", level: 1, img: "../assets/images/add.png" },
+      { question: "9 - 4 = ?", options: ["3", "4", "5", "6"], answer: "5", level: 1, img: "../assets/images/subtract.png" },
+      { question: "3 x 3 = ?", options: ["6", "9", "8", "7"], answer: "9", level: 1, img: "../assets/images/multiply.png" },
+      { question: "12 / 4 = ?", options: ["2", "3", "4", "6"], answer: "3", level: 1, img: "../assets/images/divide.png" },
+      { question: "What is 7 more than 8?", options: ["15", "16", "14", "13"], answer: "15", level: 2, img: "../assets/images/more.png" },
+      { question: "What is 100 - 57?", options: ["43", "33", "53", "47"], answer: "43", level: 2, img: "../assets/images/minus.png" },
+      { question: "What is 10% of 50?", options: ["5", "10", "15", "20"], answer: "5", level: 3, img: "../assets/images/percentage.png" },
+      { question: "Which shape has 4 equal sides?", options: ["Circle", "Rectangle", "Square", "Triangle"], answer: "Square", level: 3, img: "../assets/images/shape.png" }
+    ];
+
+    let current = 0;
+    let score = 0;
+    let level = 1;
+    let timer;
+    let timeLeft = 15;
+
+    const correctSound = document.getElementById('correctSound');
+    const wrongSound = document.getElementById('wrongSound');
+
+    function loadQuestion() {
+      clearInterval(timer);
+      timeLeft = 15;
+      document.getElementById('timer').textContent = timeLeft;
+      timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timer').textContent = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          checkAnswer(null);
+        }
+      }, 1000);
+
+      const q = questions[current];
+      level = q.level;
+      document.getElementById('level').textContent = level;
+      document.getElementById('questionText').textContent = q.question;
+      document.getElementById('total').textContent = questions.length;
+      const optionsBox = document.getElementById('optionsContainer');
+      optionsBox.innerHTML = '';
+      document.getElementById('questionImage').innerHTML = q.img ? `<img src="${q.img}" class="question-img">` : '';
+
+      q.options.forEach(option => {
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-light option';
+        btn.textContent = option;
+        btn.onclick = () => checkAnswer(option);
+        const div = document.createElement('div');
+        div.className = 'option';
+        div.appendChild(btn);
+        optionsBox.appendChild(div);
+      });
+      document.getElementById('feedback').textContent = '';
+      updateProgress();
+    }
+
+    function checkAnswer(selected) {
+      clearInterval(timer);
+      const correct = questions[current].answer;
+      const feedback = document.getElementById('feedback');
+      if (selected === correct) {
+        feedback.textContent = "✅ Correct!";
+        feedback.style.color = "green";
+        score++;
+        correctSound.play();
+      } else {
+        feedback.textContent = `❌ Wrong! Correct answer is: ${correct}`;
+        feedback.style.color = "red";
+        wrongSound.play();
+      }
+      document.getElementById('score').textContent = score;
+      current++;
+      if (current < questions.length) {
+        setTimeout(loadQuestion, 2000);
+      } else {
+        endQuiz();
+      }
+    }
+
+    function endQuiz() {
+      document.getElementById('quizBox').style.display = 'none';
+      document.querySelector('.play-again').style.display = 'block';
+      updateProgress();
+    }
+
+    function restartQuiz() {
+      current = 0;
+      score = 0;
+      document.getElementById('score').textContent = score;
+      document.getElementById('quizBox').style.display = 'block';
+      document.querySelector('.play-again').style.display = 'none';
+      loadQuestion();
+    }
+
+    function updateProgress() {
+      const percent = Math.round((current / questions.length) * 100);
+      document.getElementById('progressBar').style.width = percent + '%';
+    }
+
+    window.onload = loadQuestion;
+  </script>
+</body>
+</html>
